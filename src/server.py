@@ -223,8 +223,8 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
 
-    with ShortenerHTTPServer(("", args.port)) as server:
-        print(f"Serving URL shortener on http://localhost:{args.port}")
+    with ShortenerHTTPServer(("0.0.0.0", args.port)) as server:
+        print(f"Serving URL shortener on 0.0.0.0:{args.port}")
         try:
             server.serve_forever()
         except KeyboardInterrupt:
