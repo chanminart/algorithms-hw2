@@ -1,6 +1,7 @@
 """A string-keyed hash table using separate chaining and Horner hashing."""
 
 from collections.abc import Iterator
+from math import isfinite
 from typing import Generic, TypeVar
 
 V = TypeVar("V")
@@ -18,16 +19,30 @@ class _Node(Generic[V]):
 class HashTable(Generic[V]):
     """Store values by string key, with optional automatic resizing."""
 
-    def __init__(self, capacity: int = 8, *, auto_resize: bool = True):
+    def __init__(
+        self,
+        capacity: int = 8,
+        *,
+        auto_resize: bool = True,
+        max_load: float | None = 0.75,
+    ):
         if isinstance(capacity, bool) or not isinstance(capacity, int):
             raise TypeError("capacity must be an integer")
         if capacity <= 0:
             raise ValueError("capacity must be positive")
         if not isinstance(auto_resize, bool):
             raise TypeError("auto_resize must be a bool")
+        if max_load is not None:
+            if isinstance(max_load, bool) or not isinstance(max_load, (int, float)):
+                raise TypeError("max_load must be a positive number or None")
+            if max_load <= 0 or (
+                isinstance(max_load, float) and not isfinite(max_load)
+            ):
+                raise ValueError("max_load must be a positive finite number or None")
 
         self.capacity = capacity
-        self.auto_resize = auto_resize
+        self.max_load = max_load if auto_resize else None
+        self.auto_resize = self.max_load is not None
         self.size = 0
         self.buckets: list[_Node[V] | None] = [None] * capacity
 
@@ -78,7 +93,7 @@ class HashTable(Generic[V]):
 
         self.buckets[index] = _Node(key, value, self.buckets[index])
         self.size += 1
-        if self.auto_resize and self.load_factor > 0.75:
+        if self.max_load is not None and self.load_factor > self.max_load:
             self._resize()
 
     def items(self) -> Iterator[tuple[str, V]]:
